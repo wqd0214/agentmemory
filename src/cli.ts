@@ -143,6 +143,14 @@ const IIPINNED_VERSION =
   process.env["AGENTMEMORY_III_VERSION"] || IIPINNED_DEFAULT_VERSION;
 const IIIENGINE_INSTALL_CMD = `curl -fsSL https://install.iii.dev/iii/main/install.sh | VERSION=${IIPINNED_VERSION} sh`;
 
+// How long the CLI waits for the agentmemory worker to become ready before
+// giving up and exiting. Large stores need minutes of first-boot index
+// building; the previous hardcoded 15s killed a healthy worker in a restart
+// loop before it ever finished. Override with
+// AGENTMEMORY_WORKER_READY_TIMEOUT_MS (milliseconds).
+const WORKER_READY_TIMEOUT_MS =
+  Number(process.env["AGENTMEMORY_WORKER_READY_TIMEOUT_MS"] ?? "") || 15000;
+
 // Map Node platform/arch → the asset name iii-hq/iii ships under
 // https://github.com/iii-hq/iii/releases/download/iii/v<version>/<asset>
 function iiiReleaseAsset(): string | null {
@@ -1848,7 +1856,7 @@ async function reconcilePersistedDockerEngine(): Promise<boolean> {
     process.exit(1);
   }
   await startWorkerForEngineState();
-  if (!(await waitForAgentmemoryReady(15000))) {
+  if (!(await waitForAgentmemoryReady(WORKER_READY_TIMEOUT_MS))) {
     p.log.error("agentmemory worker did not become ready within 15s.");
     process.exit(1);
   }
@@ -2014,7 +2022,7 @@ async function main() {
   if (skipEngine) {
     if (IS_VERBOSE) p.log.info("Skipping engine check (--no-engine)");
     await import("./index.js");
-    if (await waitForAgentmemoryReady(15000)) {
+    if (await waitForAgentmemoryReady(WORKER_READY_TIMEOUT_MS)) {
       await maybeOfferGlobalInstall();
       printReadyHint();
     }
@@ -2050,7 +2058,7 @@ async function main() {
     if (detected === IIPINNED_VERSION) {
       adoptRunningEngine();
       await startWorkerForEngineState();
-      if (!(await waitForAgentmemoryReady(15000))) {
+      if (!(await waitForAgentmemoryReady(WORKER_READY_TIMEOUT_MS))) {
         p.log.error("agentmemory worker did not become ready within 15s.");
         process.exit(1);
       }
@@ -2161,7 +2169,7 @@ async function main() {
 
   s.stop(c.ok("iii-engine is ready"));
   await startWorkerForEngineState();
-  if (!(await waitForAgentmemoryReady(15000))) {
+  if (!(await waitForAgentmemoryReady(WORKER_READY_TIMEOUT_MS))) {
     p.log.error("agentmemory worker did not become ready within 15s.");
     process.exit(1);
   }
@@ -3000,7 +3008,7 @@ async function startServerForDemo(): Promise<() => Promise<void>> {
   }
 
   await startWorkerForEngineState();
-  if (!(await waitForAgentmemoryReady(15000))) {
+  if (!(await waitForAgentmemoryReady(WORKER_READY_TIMEOUT_MS))) {
     p.log.error("agentmemory worker did not become ready within 15s.");
     process.exit(1);
   }
