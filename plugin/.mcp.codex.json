@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["scripts/plugin-bridge.mjs"],
       "cwd": ".",
-      "env_vars": ["AGENTMEMORY_URL", "AGENTMEMORY_SECRET"],
+      "env_vars": ["AGENTMEMORY_URL", "AGENTMEMORY_SECRET", "NODE_EXTRA_CA_CERTS"],
       "startup_timeout_sec": 20,
       "tool_timeout_sec": 30
     }
